@@ -149,7 +149,8 @@ impl TaskManager {
 
     fn get_taskinfo(&self, ) -> TaskInfo {
         let inner = self.inner.exclusive_access();
-        let task = inner.tasks[inner.current_task];
+        let current = inner.current_task;
+        let task = inner.tasks[current];
 
         TaskInfo {
             status: task.task_status,
