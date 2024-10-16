@@ -21,8 +21,6 @@ const SYSCALL_GET_TIME: usize = 169;
 /// taskinfo syscall
 const SYSCALL_TASK_INFO: usize = 410;
 
-const MAX_SYSCALL_NUM: usize = 500;
-
 mod fs;
 mod process;
 

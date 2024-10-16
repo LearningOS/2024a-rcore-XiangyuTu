@@ -20,7 +20,7 @@ use crate::sync::UPSafeCell;
 use lazy_static::*;
 use switch::__switch;
 pub use task::{TaskControlBlock, TaskInfo, TaskStatus};
-use time::get_time_ms;
+use timer::get_time_ms;
 
 pub use context::TaskContext;
 
