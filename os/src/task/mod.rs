@@ -46,7 +46,7 @@ pub struct TaskManager {
 /// Inner of Task Manager
 pub struct TaskManagerInner {
     /// task list
-    tasks: [TaskControlBlock; MAX_SYSCALL_NUM],
+    tasks: [TaskControlBlock; MAX_APP_NUM],
     /// id of current `Running` task
     current_task: usize,
 }
@@ -198,10 +198,12 @@ pub fn exit_current_and_run_next() {
     run_next_task();
 }
 
+/// Get the task information of the current task
 pub fn get_taskinfo() -> TaskInfo {
     TASK_MANAGER.get_taskinfo()
 }
 
+/// Record the syscall times of the current task
 pub fn record_syscall_times(syscall_id: usize) {
     TASK_MANAGER.record_syscall_times(syscall_id);
 }
