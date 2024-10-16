@@ -29,9 +29,3 @@ pub enum TaskStatus {
     /// exited
     Exited,
 }
-
-pub struct TaskInfo {
-    pub status: TaskStatus,
-    pub syscall_times: [u32; MAX_SYSCALL_NUM],
-    pub time: usize,
-}

@@ -19,8 +19,11 @@ use crate::loader::{get_num_app, init_app_cx};
 use crate::sync::UPSafeCell;
 use lazy_static::*;
 use switch::__switch;
-pub use task::{TaskControlBlock, TaskInfo, TaskStatus};
-use timer::get_time_ms;
+pub use task::{TaskControlBlock, TaskStatus};
+use crate::{
+    syscall::TaskInfo,
+    timer::get_time_ms,
+};
 
 pub use context::TaskContext;
 
