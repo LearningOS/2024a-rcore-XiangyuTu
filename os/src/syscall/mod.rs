@@ -24,6 +24,8 @@ const SYSCALL_TASK_INFO: usize = 410;
 mod fs;
 mod process;
 
+pub use process::TaskInfo;
+
 use fs::*;
 use process::*;
 
