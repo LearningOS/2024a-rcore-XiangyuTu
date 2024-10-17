@@ -2,7 +2,7 @@
 use super::TaskContext;
 use crate::config::{MAX_SYSCALL_NUM, TRAP_CONTEXT_BASE};
 use crate::mm::{
-    kernel_stack_position, MapPermission, MemorySet, PhysPageNum, VirtAddr, KERNEL_SPACE,
+    kernel_stack_position, MapPermission, MemorySet, MmapProtection, PhysPageNum, VirtAddr, KERNEL_SPACE
 };
 use crate::trap::{trap_handler, TrapContext};
 
@@ -102,6 +102,27 @@ impl TaskControlBlock {
         } else {
             None
         }
+    }
+    /// mmap
+    pub fn mmap(&mut self, start: usize, len: usize, prot: usize) -> bool {
+        if prot & !7 != 0 || prot & 7 == 0 {
+            return false;
+        } 
+
+        let start_va = VirtAddr::from(start);
+        let end_va = VirtAddr::from(start + len);
+        if !start_va.aligned() {
+            return false;
+        }
+
+        self.memory_set.mmap(start_va, end_va, MmapProtection::from_bits_truncate(prot as u8))
+    }
+    /// munmap
+    pub fn munmap(&mut self, start: usize, len: usize) -> bool {
+        let start_va = VirtAddr::from(start);
+        let end_va = VirtAddr::from(start + len);
+
+        self.memory_set.munmap(start_va, end_va)
     }
 }
 
