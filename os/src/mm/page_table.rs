@@ -145,6 +145,7 @@ impl PageTable {
     }
 
     /// get the physical address from the virtual address
+    /// STATEMENT: THIS FUNCTION IS COPIED FROM CHPATER 5
     pub fn translate_va(&self, va: VirtAddr) -> Option<PhysAddr> {
         self.find_pte(va.clone().floor()).map(|pte| {
             //println!("translate_va:va = {:?}", va);
@@ -186,6 +187,7 @@ pub fn translated_byte_buffer(token: usize, ptr: *const u8, len: usize) -> Vec<&
 }
 
 /// Translate a ptr[u8] array through page table and return a mutable reference of T
+/// STATEMENT: THIS FUNCTION IS COPIED FROM CHPATER 5
 pub fn translated_refmut<T>(token: usize, ptr: *mut T) -> &'static mut T {
     let page_table = PageTable::from_token(token);
     let va = ptr as usize;
