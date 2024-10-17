@@ -1,6 +1,6 @@
 //! Implementation of [`PageTableEntry`] and [`PageTable`].
 
-use super::{frame_alloc, FrameTracker, PhysPageNum, StepByOne, VirtAddr, VirtPageNum};
+use super::{frame_alloc, FrameTracker, PhysAddr, PhysPageNum, StepByOne, VirtAddr, VirtPageNum};
 use alloc::vec;
 use alloc::vec::Vec;
 use bitflags::*;
@@ -143,6 +143,19 @@ impl PageTable {
     pub fn translate(&self, vpn: VirtPageNum) -> Option<PageTableEntry> {
         self.find_pte(vpn).map(|pte| *pte)
     }
+
+    /// get the physical address from the virtual address
+    pub fn translate_va(&self, va: VirtAddr) -> Option<PhysAddr> {
+        self.find_pte(va.clone().floor()).map(|pte| {
+            //println!("translate_va:va = {:?}", va);
+            let aligned_pa: PhysAddr = pte.ppn().into();
+            //println!("translate_va:pa_align = {:?}", aligned_pa);
+            let offset = va.page_offset();
+            let aligned_pa_usize: usize = aligned_pa.into();
+            (aligned_pa_usize + offset).into()
+        })
+    }
+
     /// get the token from the page table
     pub fn token(&self) -> usize {
         8usize << 60 | self.root_ppn.0
@@ -171,3 +184,27 @@ pub fn translated_byte_buffer(token: usize, ptr: *const u8, len: usize) -> Vec<&
     }
     v
 }
+
+/// Translate a ptr[u8] array through page table and return a mutable reference of T
+pub fn translated_refmut<T>(token: usize, ptr: *mut T) -> &'static mut T {
+    let page_table = PageTable::from_token(token);
+    let va = ptr as usize;
+    page_table
+        .translate_va(va.into())
+        .unwrap()
+        .get_mut()
+}
+
+/*
+/// Translate a ptr[u8] array through page table and return a mutable reference of TimeVal (translated_refmut is more general)
+pub fn translated_time_val(token: usize, ptr: *const usize) -> &'static mut TimeVal {
+    let page_table = PageTable::from_token(token);
+    let va = VirtAddr::from(ptr as usize);
+    let vpn = va.floor();
+    let ppn = page_table.translate(vpn).unwrap().ppn();
+    let pa: PhysAddr = ppn.into();
+    unsafe { 
+        ((pa.0 + va.page_offset()) as *mut TimeVal).as_mut().unwrap() 
+    }
+}
+*/
