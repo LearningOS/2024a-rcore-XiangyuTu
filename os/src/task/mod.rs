@@ -49,6 +49,7 @@ pub fn suspend_current_and_run_next() {
     // ---- release current PCB
 
     // push back to ready queue.
+    task.scheduled();
     add_task(task);
     // jump to scheduling cycle
     schedule(task_cx_ptr);

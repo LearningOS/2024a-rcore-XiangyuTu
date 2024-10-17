@@ -1,13 +1,14 @@
 //! Types related to task management & Functions for completely changing TCB
 use super::TaskContext;
 use super::{kstack_alloc, pid_alloc, KernelStack, PidHandle};
-use crate::config::TRAP_CONTEXT_BASE;
+use crate::config::{BIG_STRIDE, TRAP_CONTEXT_BASE};
 use crate::mm::{MemorySet, MmapProtection, PhysPageNum, VirtAddr, KERNEL_SPACE};
 use crate::sync::UPSafeCell;
 use crate::trap::{trap_handler, TrapContext};
 use alloc::sync::{Arc, Weak};
 use alloc::vec::Vec;
 use core::cell::RefMut;
+
 
 /// Task control block structure
 ///
@@ -68,6 +69,12 @@ pub struct TaskControlBlockInner {
 
     /// Program break
     pub program_brk: usize,
+
+    /// Stride
+    pub stride: u64,
+
+    /// Pass = BIG_STRIDE / priority
+    pub pass: usize,
 }
 
 impl TaskControlBlockInner {
@@ -118,6 +125,8 @@ impl TaskControlBlock {
                     exit_code: 0,
                     heap_bottom: user_sp,
                     program_brk: user_sp,
+                    stride: 0,
+                    pass: BIG_STRIDE / 16,
                 })
             },
         };
@@ -191,6 +200,8 @@ impl TaskControlBlock {
                     exit_code: 0,
                     heap_bottom: parent_inner.heap_bottom,
                     program_brk: parent_inner.program_brk,
+                    stride: 0,
+                    pass: parent_inner.pass,
                 })
             },
         });
@@ -232,6 +243,8 @@ impl TaskControlBlock {
                 exit_code: 0,
                 heap_bottom: parent_inner.heap_bottom,
                 program_brk: parent_inner.program_brk,
+                stride: 0,
+                pass: parent_inner.pass,
             })},
         });
 
@@ -307,6 +320,48 @@ impl TaskControlBlock {
         let mut inner: RefMut<'_, TaskControlBlockInner> = self.inner_exclusive_access();
 
         inner.memory_set.munmap(start_va, end_va)
+    }
+    /// add stride after scheduled
+    pub fn scheduled(&self) {
+        let mut inner = self.inner_exclusive_access();
+        inner.stride += inner.pass as u64;
+    }
+    /// set priority
+    pub fn set_priority(&self, prio: usize) {
+        let mut inner = self.inner_exclusive_access();
+        inner.pass = (BIG_STRIDE / prio).max(1);
+    }
+}
+
+impl Ord for TaskControlBlock {
+    fn cmp(&self, other: &Self) -> core::cmp::Ordering {
+        let self_stride = self.inner_exclusive_access().stride;
+        let other_stride = other.inner_exclusive_access().stride;
+
+        other_stride.cmp(&self_stride)
+    }
+}
+
+impl Eq for TaskControlBlock {
+
+}
+
+impl PartialOrd for TaskControlBlock {
+    fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
+        let self_stride = self.inner_exclusive_access().stride;
+        let other_stride = other.inner_exclusive_access().stride;
+
+        Some(other_stride.cmp(&self_stride))
+    }
+}
+
+impl PartialEq for TaskControlBlock {
+    fn eq(&self, other: &Self) -> bool {
+        if let Some(ordering) = self.partial_cmp(other) {
+            ordering == core::cmp::Ordering::Equal
+        } else {
+            false
+        }
     }
 }
 
