@@ -2,7 +2,7 @@
 use super::TaskContext;
 use super::{kstack_alloc, pid_alloc, KernelStack, PidHandle};
 use crate::config::TRAP_CONTEXT_BASE;
-use crate::mm::{MemorySet, PhysPageNum, VirtAddr, KERNEL_SPACE};
+use crate::mm::{MemorySet, MmapProtection, PhysPageNum, VirtAddr, KERNEL_SPACE};
 use crate::sync::UPSafeCell;
 use crate::trap::{trap_handler, TrapContext};
 use alloc::sync::{Arc, Weak};
@@ -235,6 +235,35 @@ impl TaskControlBlock {
         } else {
             None
         }
+    }
+    /// mmap
+    pub fn mmap(&self, start: usize, len: usize, prot: usize) -> bool {
+        if prot & !7 != 0 || prot & 7 == 0 {
+            return false;
+        }
+
+        let mut inner: RefMut<'_, TaskControlBlockInner> = self.inner_exclusive_access();
+
+        let start_va = VirtAddr::from(start);
+        let end_va = VirtAddr::from(start + len);
+        if !start_va.aligned() {
+            return false;
+        }
+
+        inner.memory_set.mmap(
+            start_va,
+            end_va,
+            MmapProtection::from_bits_truncate(prot as u8),
+        )
+    }
+    /// munmap
+    pub fn munmap(&self, start: usize, len: usize) -> bool {
+        let start_va = VirtAddr::from(start);
+        let end_va = VirtAddr::from(start + len);
+
+        let mut inner: RefMut<'_, TaskControlBlockInner> = self.inner_exclusive_access();
+
+        inner.memory_set.munmap(start_va, end_va)
     }
 }
 
