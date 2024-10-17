@@ -39,6 +39,15 @@ pub fn add_task(task: Arc<TaskControlBlock>) {
     TASK_MANAGER.exclusive_access().add(task);
 }
 
+/// Push back a process to ready queue
+pub fn push_back_task(task: Arc<TaskControlBlock>) {
+    //trace!("kernel: TaskManager::push_back_task");
+    let mut task_inner = task.inner_exclusive_access();
+    task_inner.stride += task_inner.pass;
+    drop(task_inner);
+    add_task(task);
+}
+
 /// Take a process out of the ready queue
 pub fn fetch_task() -> Option<Arc<TaskControlBlock>> {
     //trace!("kernel: TaskManager::fetch_task");

@@ -9,7 +9,6 @@ use alloc::sync::{Arc, Weak};
 use alloc::vec::Vec;
 use core::cell::RefMut;
 
-
 /// Task control block structure
 ///
 /// Directly save the contents that will not change during running
@@ -71,7 +70,7 @@ pub struct TaskControlBlockInner {
     pub program_brk: usize,
 
     /// Stride
-    pub stride: u64,
+    pub stride: usize,
 
     /// Pass = BIG_STRIDE / priority
     pub pass: usize,
@@ -232,20 +231,22 @@ impl TaskControlBlock {
         let task_control_block = Arc::new(TaskControlBlock {
             pid: pid_handle,
             kernel_stack,
-            inner: unsafe { UPSafeCell::new(TaskControlBlockInner {
-                trap_cx_ppn,
-                base_size: parent_inner.base_size,
-                task_cx: TaskContext::goto_trap_return(kernel_stack_top),
-                task_status: TaskStatus::Ready,
-                memory_set,
-                parent: Some(Arc::downgrade(self)),
-                children: Vec::new(),
-                exit_code: 0,
-                heap_bottom: parent_inner.heap_bottom,
-                program_brk: parent_inner.program_brk,
-                stride: 0,
-                pass: parent_inner.pass,
-            })},
+            inner: unsafe {
+                UPSafeCell::new(TaskControlBlockInner {
+                    trap_cx_ppn,
+                    base_size: parent_inner.base_size,
+                    task_cx: TaskContext::goto_trap_return(kernel_stack_top),
+                    task_status: TaskStatus::Ready,
+                    memory_set,
+                    parent: Some(Arc::downgrade(self)),
+                    children: Vec::new(),
+                    exit_code: 0,
+                    heap_bottom: parent_inner.heap_bottom,
+                    program_brk: parent_inner.program_brk,
+                    stride: 0,
+                    pass: parent_inner.pass,
+                })
+            },
         });
 
         parent_inner.children.push(task_control_block.clone());
@@ -321,11 +322,6 @@ impl TaskControlBlock {
 
         inner.memory_set.munmap(start_va, end_va)
     }
-    /// add stride after scheduled
-    pub fn scheduled(&self) {
-        let mut inner = self.inner_exclusive_access();
-        inner.stride += inner.pass as u64;
-    }
     /// set priority
     pub fn set_priority(&self, prio: usize) {
         let mut inner = self.inner_exclusive_access();
@@ -335,23 +331,18 @@ impl TaskControlBlock {
 
 impl Ord for TaskControlBlock {
     fn cmp(&self, other: &Self) -> core::cmp::Ordering {
-        let self_stride = self.inner_exclusive_access().stride;
-        let other_stride = other.inner_exclusive_access().stride;
-
-        other_stride.cmp(&self_stride)
+        self.partial_cmp(other).unwrap()
     }
 }
 
-impl Eq for TaskControlBlock {
-
-}
+impl Eq for TaskControlBlock {}
 
 impl PartialOrd for TaskControlBlock {
     fn partial_cmp(&self, other: &Self) -> Option<core::cmp::Ordering> {
         let self_stride = self.inner_exclusive_access().stride;
         let other_stride = other.inner_exclusive_access().stride;
-
-        Some(other_stride.cmp(&self_stride))
+        
+        other_stride.partial_cmp(&self_stride)
     }
 }
 
