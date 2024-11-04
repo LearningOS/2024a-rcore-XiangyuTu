@@ -52,4 +52,9 @@ impl Semaphore {
             block_current_and_run_next();
         }
     }
+
+    /// get the count of semaphore
+    pub fn count(&self) -> usize {
+        self.inner.exclusive_access().count as usize
+    }
 }

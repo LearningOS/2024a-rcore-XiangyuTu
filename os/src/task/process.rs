@@ -49,6 +49,20 @@ pub struct ProcessControlBlockInner {
     pub semaphore_list: Vec<Option<Arc<Semaphore>>>,
     /// condvar list
     pub condvar_list: Vec<Option<Arc<Condvar>>>,
+    /// deadlock detect enabled
+    pub deadlock_detect_enabled: bool,
+    /// need mutex list for deadlock detect [task_id, mutex_id]
+    pub need_mutex_list: Vec<Vec<usize>>,
+    /// available mutex list for deadlock detect
+    pub available_mutex_list: Vec<usize>,
+    /// allocated mutex list for deadlock detect
+    pub allocated_mutex_list: Vec<Vec<usize>>,
+    /// need semaphore list for deadlock detect
+    pub need_semaphore_list: Vec<Vec<usize>>,
+    /// available semaphore list for deadlock detect
+    pub available_semaphore_list: Vec<usize>,
+    /// allocated semaphore list for deadlock detect
+    pub allocated_semaphore_list: Vec<Vec<usize>>,
 }
 
 impl ProcessControlBlockInner {
@@ -119,6 +133,13 @@ impl ProcessControlBlock {
                     mutex_list: Vec::new(),
                     semaphore_list: Vec::new(),
                     condvar_list: Vec::new(),
+                    deadlock_detect_enabled: false,
+                    need_mutex_list: vec![Vec::new()], // task_id 0 is for main thread
+                    available_mutex_list: Vec::new(),
+                    allocated_mutex_list: vec![Vec::new()],
+                    need_semaphore_list: vec![Vec::new()],
+                    available_semaphore_list: Vec::new(),
+                    allocated_semaphore_list: vec![Vec::new()],
                 })
             },
         });
@@ -245,6 +266,13 @@ impl ProcessControlBlock {
                     mutex_list: Vec::new(),
                     semaphore_list: Vec::new(),
                     condvar_list: Vec::new(),
+                    deadlock_detect_enabled: false,
+                    need_mutex_list: vec![Vec::new()], // task_id 0 is for main thread
+                    available_mutex_list: Vec::new(),
+                    allocated_mutex_list: vec![Vec::new()],
+                    need_semaphore_list: vec![Vec::new()],
+                    available_semaphore_list: Vec::new(),
+                    allocated_semaphore_list: vec![Vec::new()],
                 })
             },
         });
